@@ -2,9 +2,7 @@ import component_extractor as ce
 import pyfits as fits
 import numpy as np
 import os as os
-import astro_tools_extra as at
-import lensing as lensingTools
-
+import matchMassComponents as mmc
 '''
 clusterClass just gets each cluster and source extracts all the halos
 from each mass component.
@@ -155,66 +153,21 @@ class clusterClass:
         if len( GasRadialDistance[ GasRadialDistance < 1000 ]) < 2:
             print GasRadialDistance, self.clusterInt
             raise ValueError('No gas positions in DM FOV available')           
-    def matchDMtoGas( self, searchRadKpc=1. ):
-        '''
-        Use the classic matching program
-        but to do this i will create fake RA and DEC
-        '''
-
-        
-        gasFitsTable = \
-          self.createPosFitsTable( self.xGasPositions, \
-                                   self.yGasPositions)
-                                   
-
-        dmFitsTable = \
-          self.createPosFitsTable( self.xDarkMatterPositions, \
-                                   self.yDarkMatterPositions)
-
-        randomStr = str(np.random.random_integers(0,10000))
-        gasFitsTable.writeto('catA_'+randomStr+'.fits')
-        dmFitsTable.writeto('catB_'+randomStr+'.fits')
-        
-        self.matchDMtoGasCat = \
-          self.matchComponents( 'catA_'+randomStr+'.fits', \
-                                'catB_'+randomStr+'.fits', \
-                                 search_rad=searchRadKpc)[1].data
-       
-
-        os.system('rm -fr catA_'+randomStr+'.fits')
-        os.system('rm -fr catB_'+randomStr+'.fits')
-        
-
-    def createPosFitsTable( self, x, y ):
-
-        #need to normallise x and y to ra and dec limits
-        
-        RA = fits.Column(name='X', array=x, format='K')
-                             
-        DEC = fits.Column(name='Y', array=y, format='K')
-
-        ID = fits.Column(name='ID', array=np.arange(len(x)), \
-                              format='K')
-
     
-        return fits.BinTableHDU.from_columns([RA,DEC,ID])
-
-
-
-    def matchComponents( self, catA, catB, search_rad=20. ):
-        stilts_path='/Users/DavidHarvey/Library/Stilts' 
+    def combineMassComponents( self ):
+        #Combine the three mass components
+        self.checkCluster()
         
-        command_str =stilts_path+'/stilts.sh tmatch2 '\
-          +'in1="'+catA+'" in2="'+catB+'" '\
-          +'matcher=2d values1="X Y" values2="X Y" '\
-          +'params="'+str(search_rad)+'" '\
-          +'out=matched_A_B.fits'
+        GasDarkMatter = \
+          mmc.matchMassComponents( self.xGasPositions, \
+                                   self.yGasPositions, \
+                                   self.xDarkMatterPositions, \
+                                   self.yDarkMatterPositions, \
+                                   searchRadKpc = 100.)
 
-
-        os.system(command_str)
-
-        matched_cat = fits.open('matched_A_B.fits')
-
-        os.system("rm -fr matched_A_B.fits")
-
-        return matched_cat
+        GasStellar = \
+          mmc.matchMassComponents( self.xGasPositions, \
+                                   self.yGasPositions, \
+                                   self.xDarkMatterPositions, \
+                                   self.yDarkMatterPositions, \
+                                   searchRadKpc = 100.)
