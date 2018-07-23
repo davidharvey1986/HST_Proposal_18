@@ -2,7 +2,7 @@ import pyfits as fits
 import numpy as np
 import os as os
 
-def matchComponents( self, xCatA, yCatA, \
+def matchMassComponents(  xCatA, yCatA, \
                              xCatB, yCatB, \
                              searchRadKpc=1. ):
     '''
@@ -12,20 +12,18 @@ def matchComponents( self, xCatA, yCatA, \
 
         
     catAFitsTable = \
-      self.createPosFitsTable( self.xCatA, \
-                                    self.yCatA)
+      createPosFitsTable( xCatA, yCatA)
                                    
 
     catBFitsTable = \
-      self.createPosFitsTable( self.xCatB, \
-                                   self.yCatB)
+      createPosFitsTable( xCatB, yCatB)
 
     randomStr = str(np.random.random_integers(0,10000))
-    gasFitsTable.writeto('catA_'+randomStr+'.fits')
-    dmFitsTable.writeto('catB_'+randomStr+'.fits')
+    catAFitsTable.writeto('catA_'+randomStr+'.fits')
+    catBFitsTable.writeto('catB_'+randomStr+'.fits')
     
     matchedCat = \
-      self.runMatch( 'catA_'+randomStr+'.fits', \
+      runMatch( 'catA_'+randomStr+'.fits', \
                                 'catB_'+randomStr+'.fits', \
                                  search_rad=searchRadKpc)[1].data
        
@@ -35,7 +33,7 @@ def matchComponents( self, xCatA, yCatA, \
     
     return matchedCat
     
-def createPosFitsTable( self, x, y ):
+def createPosFitsTable(  x, y ):
 
     #need to normallise x and y to ra and dec limits
         
@@ -51,7 +49,7 @@ def createPosFitsTable( self, x, y ):
     
 
 
-def runMatch( self, catA, catB, search_rad=20. ):
+def runMatch(  catA, catB, search_rad=20. ):
     stilts_path='/Users/DavidHarvey/Library/Stilts' 
         
     command_str =stilts_path+'/stilts.sh tmatch2 '\

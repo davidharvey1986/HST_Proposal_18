@@ -3,6 +3,7 @@ import pyfits as fits
 import numpy as np
 import os as os
 import matchMassComponents as mmc
+import ipdb as pdb
 '''
 clusterClass just gets each cluster and source extracts all the halos
 from each mass component.
@@ -101,7 +102,7 @@ class clusterClass:
     def getStellarPosition( self ):
 
         allStellarSources = \
-          ce.component_extractor( self.StellarImage, smoothing=0., \
+          ce.component_extractor( self.StellarImage, smoothing=25., \
                                 redshift=self.redshift,\
                                 filtername='gauss_5.0_9x9.conv')
                                 
@@ -119,7 +120,7 @@ class clusterClass:
         fits.writeto( DMfile, dmMass )
         
         allDMSources = \
-          ce.component_extractor( DMfile, smoothing=0., \
+          ce.component_extractor( DMfile, smoothing=25., \
                                 redshift=self.redshift,\
                                 filtername='gauss_5.0_9x9.conv')
                                 
@@ -142,7 +143,8 @@ class clusterClass:
     def checkCluster( self ):
          #Check that there are found gas posisionts
         if type(self.xGasPositions) == float:
-            raise ValueError('Cannot match since no gas positions available')
+            #print('Cannot match since no gas positions available')
+            return -1
 
         #CHeck if those positions are within the field of view of the
         #hires shit
@@ -151,12 +153,14 @@ class clusterClass:
                    ( self.yGasPositions - 1000)**2)
 
         if len( GasRadialDistance[ GasRadialDistance < 1000 ]) < 2:
-            print GasRadialDistance, self.clusterInt
-            raise ValueError('No gas positions in DM FOV available')           
+
+            print('No gas positions in DM FOV available %s' % self.clusterInt)
+            return -1
     
     def combineMassComponents( self ):
         #Combine the three mass components
-        self.checkCluster()
+        if self.checkCluster() < 0:
+            return -1
         
         GasDarkMatter = \
           mmc.matchMassComponents( self.xGasPositions, \
@@ -168,6 +172,57 @@ class clusterClass:
         GasStellar = \
           mmc.matchMassComponents( self.xGasPositions, \
                                    self.yGasPositions, \
-                                   self.xDarkMatterPositions, \
-                                   self.yDarkMatterPositions, \
+                                   self.xStellarPositions, \
+                                   self.yStellarPositions, \
                                    searchRadKpc = 100.)
+
+
+    
+
+                                   
+        if len(GasDarkMatter) != len(GasStellar):
+            pdb.set_trace()          
+            print "Vectors arent equal"
+            return -1
+        
+
+        xGasColumn = \
+          fits.Column( name='xGas', \
+                           array=GasDarkMatter['X_1'], \
+                           format='K')
+                            
+        yGasColumn = \
+          fits.Column(  name='yGas', \
+                            array=GasDarkMatter['Y_1'], \
+                            format='K')
+
+        xDarkMatterColumn = \
+               fits.Column(name='xDarkMatter', \
+                            array=GasDarkMatter['X_2'], \
+                            format='K')
+        yDarkMatterColumn = \
+               fits.Column(name='yDarkMatter', \
+                           array=GasDarkMatter['Y_2'], \
+                           format='K')
+
+        xStellarColumn = \
+          fits.Column( name='xStellar', \
+                        array=GasStellar['X_2'], \
+                        format='K')
+                        
+        yStellarColumn = \
+          fits.Column(name='yStellar', \
+                       array=GasStellar['Y_2'], \
+                       format='K') 
+        
+        totalColumns = [xGasColumn, yGasColumn, \
+                    xDarkMatterColumn, yDarkMatterColumn, \
+                    xStellarColumn, yStellarColumn ]
+                    
+        self.mergerHalos = fits.BinTableHDU.from_columns(totalColumns) 
+
+        print 'GEEEC COMPLETE'
+        return 1
+
+
+        

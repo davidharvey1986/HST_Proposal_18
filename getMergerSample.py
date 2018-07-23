@@ -74,5 +74,18 @@ class ClusterSample:
                                  for i in self.GalaxyCatalogs ]
 
         
+    def extractMergerHalos( self ):
 
+        mergerHalos = []
+        for iCluster in self.ClusterSample:
+
+            flag = iCluster.combineMassComponents()
+            print flag
+            if flag > 0:
+                print flag
+                mergerHalos.append( iCluster )
+
+                
+
+        self.mergerHalos = mergerHalos
 
