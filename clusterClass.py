@@ -144,7 +144,7 @@ class clusterClass:
          #Check that there are found gas posisionts
         if type(self.xGasPositions) == float:
             #print('Cannot match since no gas positions available')
-            return -1
+            return -2
 
         #CHeck if those positions are within the field of view of the
         #hires shit
@@ -159,8 +159,9 @@ class clusterClass:
     
     def combineMassComponents( self ):
         #Combine the three mass components
-        if self.checkCluster() < 0:
-            return -1
+        flag = self.checkCluster()
+        if  flag < 0:
+            return flag
         
         GasDarkMatter = \
           mmc.matchMassComponents( self.xGasPositions, \
@@ -195,7 +196,7 @@ class clusterClass:
           fits.Column(  name='yGas', \
                             array=GasDarkMatter['Y_1'], \
                             format='K')
-
+                            
         xDarkMatterColumn = \
                fits.Column(name='xDarkMatter', \
                             array=GasDarkMatter['X_2'], \
