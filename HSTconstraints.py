@@ -24,7 +24,7 @@ def HSTconstraints():
         
 
     
-        index = np.abs(iClusterSample.dist_si) < 200.
+        index = np.abs(iClusterSample.dist_si) < 20.
         
         
   

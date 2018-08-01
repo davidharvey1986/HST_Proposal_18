@@ -322,7 +322,7 @@ class clusterClass:
                     
                     
 
-    def CheckDarkMatterStellarDistance( self, distCut=10. ):
+    def CheckDarkMatterStellarDistance( self, distCut=20. ):
 
         
         xDarkMatterStellar = \
