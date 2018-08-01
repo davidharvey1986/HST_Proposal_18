@@ -25,7 +25,7 @@ def matchMassComponents(  xCatA, yCatA, \
     matchedCat = \
       runMatch( 'catA_'+randomStr+'.fits', \
                                 'catB_'+randomStr+'.fits', \
-                                 search_rad=searchRadKpc)[1].data
+                                 search_rad=searchRadKpc)
        
 
     os.system('rm -fr catA_'+randomStr+'.fits')
@@ -61,7 +61,7 @@ def runMatch(  catA, catB, search_rad=20. ):
 
     os.system(command_str)
 
-    matched_cat = fits.open('matched_A_B.fits')
+    matched_cat = fits.open('matched_A_B.fits')[1].data
 
     os.system("rm -fr matched_A_B.fits")
 
