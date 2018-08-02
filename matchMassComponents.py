@@ -37,12 +37,12 @@ def createPosFitsTable(  x, y ):
 
     #need to normallise x and y to ra and dec limits
         
-    RA = fits.Column(name='X', array=x, format='K')
+    RA = fits.Column(name='X', array=x, format='D')
                              
-    DEC = fits.Column(name='Y', array=y, format='K')
+    DEC = fits.Column(name='Y', array=y, format='D')
 
     ID = fits.Column(name='ID', array=np.arange(len(x)), \
-                              format='K')
+                              format='D')
                               
     
     return fits.BinTableHDU.from_columns([RA,DEC,ID])

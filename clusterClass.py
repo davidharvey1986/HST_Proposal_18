@@ -112,7 +112,7 @@ class clusterClass:
     def getStellarPosition( self ):
 
         allStellarSources = \
-          ce.component_extractor( self.StellarImage, smoothing=100., \
+          ce.component_extractor( self.StellarImage, smoothing=0., \
                                 redshift=self.redshift,\
                                 filtername='gauss_5.0_9x9.conv')
 
@@ -133,7 +133,7 @@ class clusterClass:
         fits.writeto( DMfile, dmMass )
         
         allDMSources = \
-          ce.component_extractor( DMfile, smoothing=100., \
+          ce.component_extractor( DMfile, smoothing=0., \
                                 redshift=self.redshift,\
                                 filtername='gauss_5.0_9x9.conv')
                                 
@@ -172,6 +172,8 @@ class clusterClass:
             return 1
     def combineMassComponents( self ):
         #Combine the three mass components
+
+        self.UpdateStellarPositions()
         flag = self.checkCluster()
         if  flag < 0:
             return flag
@@ -183,17 +185,17 @@ class clusterClass:
                                    self.yDarkMatterPositions, \
                                    searchRadKpc = 200.)
 
-        self.GasStellar = \
-          mmc.matchMassComponents( self.xGasPositions, \
-                                   self.yGasPositions, \
+        self.DarkMatterStars = \
+          mmc.matchMassComponents( self.xDarkMatterPositions, \
+                                   self.yDarkMatterPositions, \
                                    self.xStellarPositions, \
                                    self.yStellarPositions, \
-                                   searchRadKpc = 200.)
-
+                                   searchRadKpc = 40.)
 
 
         
-        
+        self.getGasStellar()
+   
         if len(self.GasDarkMatter) == 0 & len(self.GasStellar) == 0:
             return -3                       
         if len(self.GasDarkMatter) != len(self.GasStellar):
@@ -204,35 +206,40 @@ class clusterClass:
         if distSDFlag < 0:
             return distSDFlag
         
+        
+        distSDFlag = self.CheckDarkMatterStellarDistance()
+        if distSDFlag < 0:
+            return distSDFlag
+        
 
         xGasColumn = \
           fits.Column( name='xGas', \
                            array=self.GasDarkMatter['X_1'], \
-                           format='K')
+                           format='D')
                             
         yGasColumn = \
           fits.Column(  name='yGas', \
                             array=self.GasDarkMatter['Y_1'], \
-                            format='K')
+                            format='D')
                             
         xDarkMatterColumn = \
                fits.Column(name='xDarkMatter', \
                             array=self.GasDarkMatter['X_2'], \
-                            format='K')
+                            format='D')
         yDarkMatterColumn = \
                fits.Column(name='yDarkMatter', \
                            array=self.GasDarkMatter['Y_2'], \
-                           format='K')
+                           format='D')
 
         xStellarColumn = \
           fits.Column( name='xStellar', \
                         array=self.GasStellar['X_2'], \
-                        format='K')
+                        format='D')
                         
         yStellarColumn = \
           fits.Column(name='yStellar', \
                        array=self.GasStellar['Y_2'], \
-                       format='K') 
+                       format='D') 
         
         totalColumns = [xGasColumn, yGasColumn, \
                     xDarkMatterColumn, yDarkMatterColumn, \
@@ -322,7 +329,7 @@ class clusterClass:
                     
                     
 
-    def CheckDarkMatterStellarDistance( self, distCut=20. ):
+    def CheckDarkMatterStellarDistance( self, distCut=100. ):
 
         
         xDarkMatterStellar = \
@@ -360,3 +367,74 @@ class clusterClass:
             self.GasDarkMatter = NewGasDarkMatter
             self.GasStellar = NewGasStellar
             return 1
+
+
+    def getGasStellar( self ):
+        '''
+        Take the dark matter and find the stellar that is closest to it
+        '''
+        IdGasDarkMatter = self.GasDarkMatter['ID_2']
+
+        xStellar = np.array([])
+        yStellar = np.array([])
+        IDStellar = np.array([])
+        xGas = np.array([])
+        yGas = np.array([])
+        IDGas = np.array([])
+        separation = np.array([])
+
+        for iHalo in xrange(len(self.GasDarkMatter)):
+            index = IdGasDarkMatter[iHalo] == self.DarkMatterStars['ID_1']
+            xStellar = np.append(xStellar,  \
+              self.DarkMatterStars['X_2'][ index ])
+            yStellar =  np.append(yStellar, \
+              self.DarkMatterStars['Y_2'][ index ])
+            IDStellar =  np.append(IDStellar, \
+              self.DarkMatterStars['ID_2'][ index ])
+            iSeparation = np.sqrt( (self.DarkMatterStars['X_2'][ index ] - \
+                            self.GasDarkMatter['X_1'][iHalo])**2 + \
+                       (self.DarkMatterStars['Y_2'][ index ] - \
+                            self.GasDarkMatter['Y_1'][iHalo])**2   )
+            
+                            
+            separation = np.append( separation, iSeparation)
+              
+
+            xGas = np.append( xGas, self.GasDarkMatter['X_1'][iHalo])
+            yGas = np.append( yGas, self.GasDarkMatter['Y_1'][iHalo])
+            IDGas = np.append( IDGas, self.GasDarkMatter['ID_1'][iHalo])
+
+
+        X_1 = fits.Column(name='X_1', array=xGas, format='D')
+         
+        Y_1 = fits.Column(name='Y_1', array=yGas, format='D')
+
+        ID_1 = fits.Column(name='ID_1', array=IDGas, format='D')
+
+
+        X_2 = fits.Column(name='X_2', array=xStellar, format='D')
+         
+        Y_2 = fits.Column(name='Y_2', array=yStellar, format='D')
+
+        ID_2 = fits.Column(name='ID_2', array=IDStellar, \
+                              format='D')
+
+        separationCol =  fits.Column(name='Separation', array=separation, \
+                              format='D')
+
+
+        columns = [X_1, Y_1, ID_1, X_2, Y_2, ID_2, separationCol]
+        
+        self.GasStellar = fits.BinTableHDU.from_columns(columns).data
+
+
+
+    def UpdateStellarPositions( self, massCut=11. ):
+        self.getClusterMembers()
+        massCutIndex = self.clusterMembers['mass100'] > massCut
+        self.xStellarPositions = \
+          self.clusterMembers['x'][ massCutIndex ]
+
+        self.yStellarPositions = \
+          self.clusterMembers['y'][ massCutIndex ]
+    

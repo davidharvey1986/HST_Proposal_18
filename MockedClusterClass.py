@@ -165,31 +165,31 @@ class MockedCluster:
         xGasColumn = \
           fits.Column( name='xGas', \
                            array=self.GasDarkMatter['X_1'], \
-                           format='K')
+                           format='D')
                             
         yGasColumn = \
           fits.Column(  name='yGas', \
                             array=self.GasDarkMatter['Y_1'], \
-                            format='K')
+                            format='D')
                             
         xDarkMatterColumn = \
           fits.Column(name='xDarkMatter', \
                             array=self.GasDarkMatter['X_2'], \
-                            format='K')
+                            format='D')
         yDarkMatterColumn = \
           fits.Column(name='yDarkMatter', \
                            array=self.GasDarkMatter['Y_2'], \
-                           format='K')
+                           format='D')
 
         xStellarColumn = \
           fits.Column( name='xStellar', \
                         array=self.GasStellar['X_2'], \
-                        format='K')
+                        format='D')
                         
         yStellarColumn = \
           fits.Column(name='yStellar', \
                        array=self.GasStellar['Y_2'], \
-                       format='K') 
+                       format='D') 
         
         totalColumns = [xGasColumn, yGasColumn, \
                         xDarkMatterColumn, yDarkMatterColumn, \
