@@ -4,6 +4,7 @@ import numpy as np
 import os as os
 import matchMassComponents as mmc
 import ipdb as pdb
+from matplotlib import pyplot as plt
 
 '''
 clusterClass just gets each cluster and source extracts all the halos
@@ -23,7 +24,7 @@ class clusterClass:
           GasConcentration
 
         self.dataDir = \
-          '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS'
+          '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/KetelMount/BAHAMAS'
         self.clusterInt = clusterInt
         self.simulation = simulation
         self.redshift = redshift
@@ -80,7 +81,8 @@ class clusterClass:
                       ('y', float), ('z', float), \
                        ('mass30', float), ('mass100', float)]
 
-
+        if not os.path.isfile(self.GalaxyCat):
+            pdb.set_trace()
         self.clusterMembers = \
           np.loadtxt( self.GalaxyCat, dtype=dtypes)
 
@@ -173,17 +175,13 @@ class clusterClass:
     def combineMassComponents( self ):
         #Combine the three mass components
 
-        self.UpdateStellarPositions()
+        #self.UpdateStellarPositions()
+        
         flag = self.checkCluster()
         if  flag < 0:
             return flag
         
-        self.GasDarkMatter = \
-          mmc.matchMassComponents( self.xGasPositions, \
-                                   self.yGasPositions, \
-                                   self.xDarkMatterPositions, \
-                                   self.yDarkMatterPositions, \
-                                   searchRadKpc = 200.)
+        
 
         self.DarkMatterStars = \
           mmc.matchMassComponents( self.xDarkMatterPositions, \
@@ -192,43 +190,47 @@ class clusterClass:
                                    self.yStellarPositions, \
                                    searchRadKpc = 40.)
 
-
+        self.DarkMatterGas = \
+          mmc.matchMassComponents( self.xDarkMatterPositions, \
+                                   self.yDarkMatterPositions, \
+                                    self.xGasPositions, \
+                                   self.yGasPositions, \
+                                   searchRadKpc = 200.)
         
         self.getGasStellar()
-   
-        if len(self.GasDarkMatter) == 0 & len(self.GasStellar) == 0:
+
+        if len(self.DarkMatterGas) == 0 & len(self.GasStellar) == 0:
             return -3                       
-        if len(self.GasDarkMatter) != len(self.GasStellar):
+        if len(self.DarkMatterGas) != len(self.GasStellar):
             self.RemoveUnmatchedHalos()
-        if len(self.GasDarkMatter) != len(self.GasStellar):
+        if len(self.DarkMatterGas) != len(self.GasStellar):
             raise ValueError("the remove unmatched didnt work and ive fucked up")
         distSDFlag = self.CheckDarkMatterStellarDistance()
         if distSDFlag < 0:
             return distSDFlag
         
         
-        distSDFlag = self.CheckDarkMatterStellarDistance()
-        if distSDFlag < 0:
-            return distSDFlag
+        
+        
         
 
         xGasColumn = \
           fits.Column( name='xGas', \
-                           array=self.GasDarkMatter['X_1'], \
+                           array=self.DarkMatterGas['X_2'], \
                            format='D')
                             
         yGasColumn = \
           fits.Column(  name='yGas', \
-                            array=self.GasDarkMatter['Y_1'], \
+                            array=self.DarkMatterGas['Y_2'], \
                             format='D')
                             
         xDarkMatterColumn = \
                fits.Column(name='xDarkMatter', \
-                            array=self.GasDarkMatter['X_2'], \
+                            array=self.DarkMatterGas['X_1'], \
                             format='D')
         yDarkMatterColumn = \
                fits.Column(name='yDarkMatter', \
-                           array=self.GasDarkMatter['Y_2'], \
+                           array=self.DarkMatterGas['Y_1'], \
                            format='D')
 
         xStellarColumn = \
@@ -297,12 +299,12 @@ class clusterClass:
             
     def RemoveUnmatchedHalos( self ):
 
-        if len(self.GasDarkMatter) > len(self.GasStellar):
-            PrimaryArray = self.GasDarkMatter
+        if len(self.DarkMatterGas) > len(self.GasStellar):
+            PrimaryArray = self.DarkMatterGas
             SecondaryArray = self.GasStellar
         else:
             PrimaryArray = self.GasStellar
-            SecondaryArray = self.GasDarkMatter
+            SecondaryArray = self.DarkMatterGas
 
 
         NewPrimaryArray =  \
@@ -321,8 +323,8 @@ class clusterClass:
                       PrimaryArray[iCount][iName]
                 NewCount += 1
                 
-        if len(self.GasDarkMatter) > len(self.GasStellar):
-            self.GasDarkMatter = NewPrimaryArray
+        if len(self.DarkMatterGas) > len(self.GasStellar):
+            self.DarkMatterGas = NewPrimaryArray
         else:
             self.GasStellar = NewPrimaryArray
 
@@ -333,10 +335,10 @@ class clusterClass:
 
         
         xDarkMatterStellar = \
-          self.GasDarkMatter['X_2'] - self.GasStellar['X_2']
+          self.DarkMatterGas['X_2'] - self.GasStellar['X_2']
         yDarkMatterStellar = \
-          self.GasDarkMatter['Y_2'] - self.GasStellar['Y_2']
-        dtype = self.GasDarkMatter.dtype
+          self.DarkMatterGas['Y_2'] - self.GasStellar['Y_2']
+        dtype = self.DarkMatterGas.dtype
             
         distDarkMatterStellar = \
           np.sqrt( (xDarkMatterStellar)**2 + \
@@ -346,25 +348,25 @@ class clusterClass:
                                                
         NewGasStellar =np.zeros(nValid , dtype=dtype)
 
-        NewGasDarkMatter = np.zeros(nValid , dtype=dtype)
+        NewDarkMatterGas = np.zeros(nValid , dtype=dtype)
         
         iValid = 0
-        for iCount, iMergerPair in enumerate(self.GasDarkMatter):
+        for iCount, iMergerPair in enumerate(self.DarkMatterGas):
             if distDarkMatterStellar[iCount] < distCut:
                 
                 for iName in dtype.names:
                     NewGasStellar[iValid][iName] = \
                       self.GasStellar[iCount][iName]
                       
-                    NewGasDarkMatter[iValid][iName] = \
-                      self.GasDarkMatter[iCount][iName]
+                    NewDarkMatterGas[iValid][iName] = \
+                      self.DarkMatterGas[iCount][iName]
                       
                 iValid += 1
         
         if iValid ==0:
             return -4
         else:
-            self.GasDarkMatter = NewGasDarkMatter
+            self.DarkMatterGas = NewDarkMatterGas
             self.GasStellar = NewGasStellar
             return 1
 
@@ -373,7 +375,7 @@ class clusterClass:
         '''
         Take the dark matter and find the stellar that is closest to it
         '''
-        IdGasDarkMatter = self.GasDarkMatter['ID_2']
+        IdDarkMatterStars = self.DarkMatterStars['ID_1']
 
         xStellar = np.array([])
         yStellar = np.array([])
@@ -383,27 +385,29 @@ class clusterClass:
         IDGas = np.array([])
         separation = np.array([])
 
-        for iHalo in xrange(len(self.GasDarkMatter)):
-            index = IdGasDarkMatter[iHalo] == self.DarkMatterStars['ID_1']
+        for iHalo in xrange(len(self.DarkMatterGas)):
+            index = IdDarkMatterStars == self.DarkMatterGas['ID_1'][iHalo]
+            
             xStellar = np.append(xStellar,  \
               self.DarkMatterStars['X_2'][ index ])
             yStellar =  np.append(yStellar, \
               self.DarkMatterStars['Y_2'][ index ])
             IDStellar =  np.append(IDStellar, \
               self.DarkMatterStars['ID_2'][ index ])
+              
             iSeparation = np.sqrt( (self.DarkMatterStars['X_2'][ index ] - \
-                            self.GasDarkMatter['X_1'][iHalo])**2 + \
+                            self.DarkMatterGas['X_2'][iHalo])**2 + \
                        (self.DarkMatterStars['Y_2'][ index ] - \
-                            self.GasDarkMatter['Y_1'][iHalo])**2   )
+                            self.DarkMatterGas['Y_2'][iHalo])**2   )
             
                             
             separation = np.append( separation, iSeparation)
               
 
-            xGas = np.append( xGas, self.GasDarkMatter['X_1'][iHalo])
-            yGas = np.append( yGas, self.GasDarkMatter['Y_1'][iHalo])
-            IDGas = np.append( IDGas, self.GasDarkMatter['ID_1'][iHalo])
-
+            xGas = np.append( xGas, self.DarkMatterGas['X_2'][iHalo])
+            yGas = np.append( yGas, self.DarkMatterGas['Y_2'][iHalo])
+            IDGas = np.append( IDGas, self.DarkMatterGas['ID_2'][iHalo])
+            
 
         X_1 = fits.Column(name='X_1', array=xGas, format='D')
          
@@ -426,10 +430,11 @@ class clusterClass:
         columns = [X_1, Y_1, ID_1, X_2, Y_2, ID_2, separationCol]
         
         self.GasStellar = fits.BinTableHDU.from_columns(columns).data
+        if len(self.GasStellar) != len(self.DarkMatterGas):
+            raise ValueError("Gas vector not the correct length")
 
 
-
-    def UpdateStellarPositions( self, massCut=11. ):
+    def UpdateStellarPositions( self, massCut=0. ):
         self.getClusterMembers()
         massCutIndex = self.clusterMembers['mass100'] > massCut
         self.xStellarPositions = \
@@ -438,3 +443,57 @@ class clusterClass:
         self.yStellarPositions = \
           self.clusterMembers['y'][ massCutIndex ]
     
+
+
+    def plotPositions(self):
+
+        plt.plot(self.xGasPositions, self.yGasPositions, 'r.')
+        plt.plot(self.xDarkMatterPositions, self.yDarkMatterPositions, 'b.')
+        plt.plot(self.xStellarPositions, self.yStellarPositions, 'g.')
+
+
+
+    def BinaryCluster( self, pixelScale=5., aperature=200, closeCut=15,\
+                        massContrastCut=0.5, massCut=11.5, GasDistCut=50.):
+        '''
+        Retur a boolean if there is a galaxy of mass contrast to the BCG
+        greater than massContrastCut (default 0.5) and absolute mass 
+        of greater than 11.5
+        within aperature (default =  100kpc ) of the central BCG 
+        (projected distance)
+        and not wihtin the closeCUt (the prior of the BCG)
+            
+        '''
+        self.getClusterMembers()
+        massCutIndex = self.clusterMembers['mass100'] > massCut
+        BinaryHalo = []
+        galaxyMass = self.clusterMembers['mass100']
+        for iHalo in self.mergerHalos:
+
+            distance = np.sqrt( (iHalo['xStellar'] - self.clusterMembers['x'])**2 + \
+                            (iHalo['yStellar'] - self.clusterMembers['y'])**2)*pixelScale
+
+            nearestBCGmass = self.clusterMembers['mass100'][ np.argmin(distance) ]
+        
+            MassContrast = 10**nearestBCGmass / \
+                                10**self.clusterMembers['mass100']
+
+
+
+            DistanceBool = (distance < aperature) &  (distance > 0)
+            MassContrastBool = (MassContrast[DistanceBool] > massContrastCut)
+            MassBool =  (galaxyMass[DistanceBool] > massCut)
+            CloseBool = (distance[ DistanceBool ] < closeCut)
+    
+            BinaryHalo.append(np.any(MassContrastBool | MassBool | CloseBool))
+
+        '''
+        BinaryHalo = []
+        for iHalo in self.mergerHalos:
+
+            distance = np.sqrt( (iHalo['xDarkMatter'] - self.mergerHalos['xDarkMatter'])**2 + \
+                            (iHalo['yDarkMatter'] - self.mergerHalos['yDarkMatter'])**2)
+
+            BinaryHalo.append(np.any( (distance > 0.) & (distance < GasDistCut)))
+        '''
+        return np.array(BinaryHalo) == False

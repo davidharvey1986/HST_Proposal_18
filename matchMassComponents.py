@@ -42,7 +42,7 @@ def createPosFitsTable(  x, y ):
     DEC = fits.Column(name='Y', array=y, format='D')
 
     ID = fits.Column(name='ID', array=np.arange(len(x)), \
-                              format='D')
+                              format='D}')
                               
     
     return fits.BinTableHDU.from_columns([RA,DEC,ID])

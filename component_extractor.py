@@ -37,8 +37,6 @@ def component_extractor( image_file, smoothing=20, \
     filtername = conf_path+'/'+filtername
    
     conf_args = {'WEIGHT_TYPE':'NONE',
-                 'CLEAN':'Y',
-                 'DEBLEND_NTHRESH':4, 
                  'FILTER_NAME':filtername,
                     'FILTER':'YES'}
     

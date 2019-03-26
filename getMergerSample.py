@@ -18,12 +18,12 @@ class ClusterSample:
         else:
             self.Sims = gSD.getSimList( SimName )
             self.dataDir = \
-            '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS'
-            self.pickleFile = 'Pickles/'+SimName+'_MassPositions.pkl'
+              '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/KetelMount/BAHAMAS/'
+            self.pickleFile = 'Pickles/'+SimName+'_NewDataBase_MassPositions.pkl'
 
             if os.path.isfile( self.pickleFile):
                 self.ClusterSample = \
-                pkl.load( open( self.pickleFile, 'rb'))
+                  pkl.load( open( self.pickleFile, 'rb'))
             else:
                 self.getClusterSample()
 
@@ -36,7 +36,7 @@ class ClusterSample:
 
                 for iRedshift in self.redshiftList:
                     simPickleFile = \
-                      "Pickles/"+iSim+"_"+str(iRedshift)+".pkl"
+                      "Pickles/"+iSim+"_"+str(iRedshift)+"_NewDataBase_.pkl"
 
                     if os.path.isfile( simPickleFile ):
                         simClusterClasses = \
@@ -96,7 +96,7 @@ class ClusterSample:
     def extractMergerHalos( self ):
 
         mergerHalos = []
-        pickleFile = "Pickles/"+self.SimName+"_mergerHalos.pkl"
+        pickleFile = "Pickles/"+self.SimName+"_NewDataBase_mergerHalos.pkl"
         if os.path.isfile( pickleFile ):
             self.mergerHalos = pkl.load(open(pickleFile, 'rb'))
         else:
@@ -123,20 +123,23 @@ class ClusterSample:
         self.ClusterMass = np.array([])
         self.dist_sd = np.array([])
         for iMerger in self.mergerHalos:
-                
+            
             if (len(iMerger.dist_si)<=1) | (len(iMerger.dist_si) > nClusters):
                 continue
-            self.dist_si = np.append( self.dist_si, iMerger.dist_si[0:nClusters])
-            self.dist_sg = np.append( self.dist_sg, iMerger.dist_sg[0:nClusters])
-            self.dist_di = np.append( self.dist_di, iMerger.dist_di[0:nClusters])
-            sd = np.sqrt(np.sum(iMerger.vector_sd**2, axis=0))
-            self.dist_sd = np.append( self.dist_sd, sd[0:nClusters])
+            BinaryHalos = iMerger.BinaryCluster()
+            
 
-            self.beta = np.append( self.beta, iMerger.beta[0:nClusters])
-            self.betaPerp = np.append( self.betaPerp, iMerger.betaPerp[0:nClusters])
+            self.dist_si = np.append( self.dist_si, iMerger.dist_si[BinaryHalos][0:nClusters])
+            self.dist_sg = np.append( self.dist_sg, iMerger.dist_sg[BinaryHalos][0:nClusters])
+            self.dist_di = np.append( self.dist_di, iMerger.dist_di[BinaryHalos][0:nClusters])
+            sd = np.sqrt(np.sum(iMerger.vector_sd**2, axis=0))
+            self.dist_sd = np.append( self.dist_sd, sd[BinaryHalos][0:nClusters])
+
+            self.beta = np.append( self.beta, iMerger.beta[BinaryHalos][0:nClusters])
+            self.betaPerp = np.append( self.betaPerp, iMerger.betaPerp[BinaryHalos][0:nClusters])
             self.ClusterMass = \
               np.append( self.ClusterMass, \
-                             np.zeros(len(iMerger.beta[0:nClusters]))+iMerger.mass)
+                             np.zeros(len(iMerger.beta[BinaryHalos][0:nClusters]))+iMerger.mass)
             
 
             

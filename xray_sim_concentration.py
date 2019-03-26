@@ -18,7 +18,7 @@ def xray_sim_concentration( cluster_number, r_grid, \
         
 
     
-    dataDir = '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/'+sim+'/'+clusterRedshiftStr
+    dataDir = '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/KetelMount/BAHAMAS/'+sim+'/'+clusterRedshiftStr
     cluster_catalogue = np.loadtxt( dataDir+'/catalog.dat',
                                     dtype=[('id', int), ('fof', int), ('mass', float), ('r200', float)])
     
@@ -39,7 +39,7 @@ def get_all_xray_concentrations( clusterInts, x0=1000, y0=1000, \
     loop through all xray maps and get concentrations
     '''
 
-    dataDir = '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/'+sim+'/'+clusterRedshiftStr
+    dataDir = '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/KetelMount/BAHAMAS/'+sim+'/'+clusterRedshiftStr
     image_size = fits.open( dataDir+'/MAPS/cluster_'+clusterInts[0]+'_xray.fits' )[0].data.shape
 
     pixel_size = 5 #kpc
@@ -50,7 +50,7 @@ def get_all_xray_concentrations( clusterInts, x0=1000, y0=1000, \
 
     xray_concentration = []
     for i, iCl in enumerate(clusterInts):
-        print i+1,'/',len(clusterInts)
+        print("Cluster %s (%i/%i)" % (iCl,i+1,len(clusterInts)))
         iConcentration = xray_sim_concentration( iCl, r_grid, sim=sim,\
                                 clusterRedshiftStr=clusterRedshiftStr)
         xray_concentration.append( iConcentration )
