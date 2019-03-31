@@ -5,7 +5,8 @@ import os as os
 import matchMassComponents as mmc
 import ipdb as pdb
 from matplotlib import pyplot as plt
-
+import pickle as pkl
+from getStellarAndDarkMatter import *
 '''
 clusterClass just gets each cluster and source extracts all the halos
 from each mass component.
@@ -49,11 +50,33 @@ class clusterClass:
         self.getClusterMass()
         if self.GasConcentration < 0.2:
             self.getClusterMembers()
+            #I have sped it up, now the stellar and dark mat
+            #positions are in a pickle file
+            self.stellarAndDmPklFile = \
+              "Pickles/StellarAndDMPositions/StellarAndDM_%s_z_%s_%s.pkl"\
+              % (self.simulation, redshiftStr, self.clusterInt)
+            
+            if os.path.isfile( self.stellarAndDmPklFile ):
+                try:
+                    self.getStellarAndDarkMatter()
+                except:
+                    self.getStellarPosition()
+                    self.getDarkMatterPositions()
+            else:
+                self.getStellarPosition()
+                self.getDarkMatterPositions()
+            
             self.getGasPosition()
-            self.getStellarPosition()
-            self.getDarkMatterPositions()
+    def  getStellarAndDarkMatter(self):
+        print self.stellarAndDmPklFile
+        clusterComponents = \
+          pkl.load(open(self.stellarAndDmPklFile,"rb"))
 
-
+        self.xStellarPositions = clusterComponents.xStellarPositions
+        self.yStellarPositions = clusterComponents.yStellarPositions
+        self.xDarkMatterPositions = clusterComponents.xDarkMatterPositions
+        self.xDarkMatterPositions = clusterComponents.xDarkMatterPositions
+        
     def initAllPositions( self ):
         self.xGasPositions = 1000.
         self.yGasPositions = 1000.
@@ -82,37 +105,52 @@ class clusterClass:
                        ('mass30', float), ('mass100', float)]
 
         if not os.path.isfile(self.GalaxyCat):
+            newDataDir = '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/KetelMount/BAHAMAS'
+            self.GalaxyCat =  '/'.join([newDataDir]+self.GalaxyCat.split('/')[-4:])
+        if not os.path.isfile(self.GalaxyCat):
             pdb.set_trace()
+                
+
         self.clusterMembers = \
           np.loadtxt( self.GalaxyCat, dtype=dtypes)
 
         
     def getGasPosition( self, smoothing=5., rebin_pix=5., \
                             scales='4, 8, 16, 32'):
-        #Not the gas smoothing scale is x5kpc not x1kpc
+        #Note the gas smoothing scale is x5kpc not x1kpc
         #allGasSources = \
         #  ce.component_extractor( self.GasImage, smoothing=smoothing, \
         #                        redshift=self.redshift,\
         #                            filtername='gauss_5.0_9x9.conv')
 
-        allGasSources = \
-          ce.wavdetectExtractor( self.GasImage, \
+        redshiftStr = "%0.3f" % self.redshift
+        
+        pklFile = "Pickles/GasPositions/Gas_%s_z_%s_%s.pkl" % \
+          (self.simulation,self.redshift,self.clusterInt)
+
+        
+        if os.path.isfile( pklFile ):
+            gasSources = pkl.load(open(pklFile, "rb"))
+            self.xGasPositions = gasSources.xGasPositions
+            self.yGasPositions = gasSources.yGasPositions
+        else:
+            allGasSources = \
+              ce.wavdetectExtractor( self.GasImage, \
                                      scales=scales, \
                                      rebin_pix=rebin_pix)
-
-        #The xray maps have a different resolution to that
-        #of the other maps (5kpc, as supposed  from 1kpc)
-        dim = 1000./rebin_pix
-        scale = 5.*rebin_pix
+            #The xray maps have a different resolution to that
+            #of the other maps (5kpc, as supposed  from 1kpc)
+            dim = 1000./rebin_pix
+            scale = 5.*rebin_pix
   
-        self.xGasPositions = \
-          (allGasSources['X'] - dim)*scale + 1000.
-        self.yGasPositions = \
-          (allGasSources['Y'] - dim)*scale + 1000.
-  
+            self.xGasPositions = \
+              (allGasSources['X'] - dim)*scale + 1000.
+            self.yGasPositions = \
+              (allGasSources['Y'] - dim)*scale + 1000.
+    
         
     def getStellarPosition( self ):
-
+        
         allStellarSources = \
           ce.component_extractor( self.StellarImage, smoothing=0., \
                                 redshift=self.redshift,\
@@ -468,10 +506,13 @@ class clusterClass:
         massCutIndex = self.clusterMembers['mass100'] > massCut
         BinaryHalo = []
         galaxyMass = self.clusterMembers['mass100']
-        for iHalo in self.mergerHalos:
-
-            distance = np.sqrt( (iHalo['xStellar'] - self.clusterMembers['x'])**2 + \
-                            (iHalo['yStellar'] - self.clusterMembers['y'])**2)*pixelScale
+        
+        for iHalo in xrange(len(self.mergerHalos)):
+            
+            distance = np.sqrt( (self.mergerHalos['xStellar'][iHalo] - \
+                                     self.clusterMembers['x'])**2 + \
+                            (self.mergerHalos['yStellar'][iHalo] - \
+                                 self.clusterMembers['y'])**2)*pixelScale
 
             nearestBCGmass = self.clusterMembers['mass100'][ np.argmin(distance) ]
         
@@ -485,7 +526,8 @@ class clusterClass:
             MassBool =  (galaxyMass[DistanceBool] > massCut)
             CloseBool = (distance[ DistanceBool ] < closeCut)
     
-            BinaryHalo.append(np.any(MassContrastBool | MassBool | CloseBool))
+            BinaryHalo.append(np.any(MassContrastBool | \
+                            MassBool | CloseBool))
 
         '''
         BinaryHalo = []
@@ -497,3 +539,6 @@ class clusterClass:
             BinaryHalo.append(np.any( (distance > 0.) & (distance < GasDistCut)))
         '''
         return np.array(BinaryHalo) == False
+
+
+

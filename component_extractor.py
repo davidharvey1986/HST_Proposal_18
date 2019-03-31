@@ -28,7 +28,7 @@ def component_extractor( image_file, smoothing=20, \
     pixel_size_degrees = pixel_size_kpc/(lensing.ang_distance( redshift )*1e3)*180./np.pi
 
     #Create a random string to component find
-    file_name = 'component_finding_'+str(np.random.random_integers(0,1000))+'.fits'
+    file_name = 'component_finding_'+str(np.random.random_integers(0,100000))+'.fits'
     fits.writeto( file_name, smoothed_image, clobber=True )
     
     conf_path = '/Users/DavidHarvey/Library/Code/IDL/rrg/code/shape/sex_files/'
