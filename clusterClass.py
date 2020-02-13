@@ -25,7 +25,7 @@ class clusterClass:
           GasConcentration
 
         self.dataDir = \
-          '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/KetelMount/BAHAMAS'
+          '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/KetelMount/simulations/BAHAMAS'
         self.clusterInt = clusterInt
         self.simulation = simulation
         self.redshift = redshift
@@ -105,7 +105,7 @@ class clusterClass:
                        ('mass30', float), ('mass100', float)]
 
         if not os.path.isfile(self.GalaxyCat):
-            newDataDir = '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/KetelMount/BAHAMAS'
+            newDataDir = '/Users/DavidHarvey/Documents/Work/Mergers/sims/BAHAMAS/KetelMount/harvey/simulations/BAHAMAS'
             self.GalaxyCat =  '/'.join([newDataDir]+self.GalaxyCat.split('/')[-4:])
         if not os.path.isfile(self.GalaxyCat):
             pdb.set_trace()

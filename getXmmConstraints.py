@@ -19,7 +19,7 @@ from lensing.lensing_parameters import *
 import pyRRG as pyRRG
 import RRGtools as at
 import pysex as sex
-
+import sys
 def getDistributionStarsGas():
     '''
     Distrubtion in stars and gas
@@ -39,10 +39,11 @@ def getDistributionStarsGas():
                 clusterName = iCluster.split('/')[-1]
                 iMerger = mergerHalo(clusterName, iHalo)
                 iMerger.calculateBulletVectors()
+                iMerger.ouputDistSG('Harvey15distances.dat')
                 listOfMergerHalos.append(iMerger)
 
 
-
+    sys.exit()
     simName = 'CDM'
     #simulatedClusters = ClusterSample(simName)
 
@@ -60,6 +61,8 @@ def getDistributionStarsGas():
     plt.plot( [np.median(proposedClusterRadius),np.median(proposedClusterRadius)],[0.,np.max(y)],'-')
 
     plt.show()
+
+    
 
 def getProposedClusterRadii():
     '''
@@ -125,6 +128,26 @@ class mergerHalo:
         self.getRedshift()
         self.getAngularDistance()
 
+    def ouputDistSG( self, outputFileName ):
+        '''
+        write to distances to a file
+        in arcmin for alexey
+        '''
+        if os.path.isfile( outputFileName):
+            outputFile = open(outputFileName, 'a+')
+        else:
+            outputFile = open(outputFileName, 'wb')
+            outputFile.write('# ClusterName\tDarkMatter-Gas Separation\n')
+
+        for i in xrange(len(self.dist_sg)):
+            distanceArcMin = self.dist_sg[i]/\
+              ang_distance(self.redshift)/1e3*206265./60.
+            outputFile.write("%s\t%0.3f\n" % \
+                        (self.clusterName, distanceArcMin))
+       
+        
+        outputFile.close()
+        
     def getAngularDistance( self ):
         #ang distance in kpc
         self.angularDistance = \

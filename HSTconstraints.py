@@ -31,14 +31,21 @@ def HSTconstraints():
     crossSection = np.array([0., 0.1, 0.3, 1.0])
 
     for i, iSimName in enumerate(SimNames):
+        finalPickleFile = 'Pickles/finalHalos_'+iSimName+'.pkl'
 
-        iClusterSample = ClusterSample(iSimName)
+        if os.path.isfile( finalPickleFile ):
+            iClusterSample = pkl.load(open(finalPickleFile,'rb'))
+        else:
+            iClusterSample = ClusterSample(iSimName)
 
-        iClusterSample.extractMergerHalos()
+            iClusterSample.extractMergerHalos()
 
-        iClusterSample.CalculateOffsetVectors(nClusters=5)
+            iClusterSample.CalculateOffsetVectors(nClusters=5)
+            
+            pkl.dump(iClusterSample, open(finalPickleFile, 'wb'))
         
-        index = np.abs(iClusterSample.ClusterMass) > np.log10(1e14)
+        
+        index = iClusterSample.dist_sg < 250
         
         nClusters = len(index[index])
         print 'rayleigh',rayleigh.fit(iClusterSample.dist_sd[index], loc=0)
@@ -46,7 +53,7 @@ def HSTconstraints():
                   (nClusters,len(iClusterSample.ClusterMass)))
 
         #plotBulletVector( iClusterSample )
-       
+
         
         meanSG, stdSG = getMean(iClusterSample.dist_sg[index] )
         meanSI, stdSI = getMean(iClusterSample.dist_si[index])
@@ -61,13 +68,15 @@ def HSTconstraints():
         stdTotDistSG[i] = stdSG
         totBeta[i] = meanBeta
         stdTotBeta[i] = stdBeta
-    
+        
+
         
         print("%s SG mean is %f +/- %0.2f" %  ( iSimName, meanSG, stdSG))
         print("%s SI mean is %f +/- %0.2f" %  ( iSimName, meanSI, stdSI))
         print("%s DI mean is %f +/- %0.2f" %  ( iSimName, meanDI, stdDI))
         print("%s Beta mean is %f +/- %0.2f" %  ( iSimName, meanBeta, stdBeta))
-        
+    #totBeta -=  totBeta[0]
+    
     #Dump this info in a pickle so i can use it for other scripts
     pkl.dump([crossSection,totBeta,stdTotBeta, totDistSI, totDistSG],\
                  open('Pickles/SimulationBetaToCross.pkl','wb'))
@@ -75,7 +84,6 @@ def HSTconstraints():
     #axarr[0].errorbar( crossSection, totDistSI, yerr=stdTotDistSI, fmt='o')
     #axarr[0].set_xlim(1e-2, 2.0)
     #axarr[0].set_xscale('log')
-    
     plt.sca(axarr)
     ax = plt.gca()
 
@@ -102,30 +110,31 @@ def HSTconstraints():
     
     ax.errorbar( [1e-3, BAHAMASCrossSection[0]], \
                            HarveyMeasurement, color='red')
-    ax.text( 0.006, HarveyMeasurement[0], \
-        'Existing HST+Chandra archive of 30 clusters (H15)', color='red')
-    ax.errorbar(  HarveyCrossSection, \
-                [-0.1,HarveyMeasurement[0]], color='red', ls='--', \
-                            label='Published particle constraints')
-    ax.errorbar(  BAHAMASCrossSection, \
-                [-0.1,HarveyMeasurement[0]], color='red',ls=':',\
-                        label='Revised interpretation (cf.W17)')
+    ax.text( 0.012, HarveyMeasurement[0]*1.1, \
+        'Existing HST+Chandra archive of 30 clusters', color='red')
+    #ax.errorbar(  HarveyCrossSection, \
+    #            [-0.1,HarveyMeasurement[0]], color='red', ls='--', \
+    #                        label='Published particle constraints')
+    #ax.errorbar(  BAHAMASCrossSection, \
+    #            [-0.1,HarveyMeasurement[0]], color='red',ls=':',\
+    #                    label='Revised interpretation (cf.W17)')
 
 
     plotSensitivity(meanSI,meanSG,BetaCrossSectionTrend)
     
-    ax.set_ylim(-0.03,0.15)
-    ax.set_xscale('log')
 
+    ax.set_xscale('log')
+    ax.set_yscale('log')
 
     #axarr[0].legend(loc=0)
     ax.legend(loc=0)
 
     #axarr[0].set_xlabel('Star - Gas Distance / kpc')
     #axarr[0].set_ylabel('Star - Intersection / kpc')
-    ax.set_xlabel(r'Dark Matter Cross-Section / cm$^2$/g', fontsize=12, labelpad=-5)
-    ax.set_ylabel(r'Observable $\beta=\delta_{\rm SI}/\delta_{\rm SG}$', fontsize=12, labelpad=-5)
-    ax.set_xlim(5e-3,3)
+    ax.set_xlabel(r'Dark Matter Cross-Section / cm$^2$/g', fontsize=12)
+    ax.set_ylabel(r'Observable $\beta=\delta_{\rm SI}/\delta_{\rm SG}$', fontsize=12)
+    ax.set_ylim(2e-3,0.3)
+    ax.set_xlim(1e-2,1.75)
     plt.savefig('../plots/HSTconstraints.pdf')
     plt.show()
 def getMaxLike( y, bins=30 ):
@@ -197,7 +206,7 @@ def plotSensitivity(si,sg,BetaCrossSectionTrend):
     error =60.
     sigmaBeta = 0.07
     nClusterBenchMark = 72
-    nNewClusters = 128
+    nNewClusters = 72
     totalClusters = nClusterBenchMark + nNewClusters
 
     ax = plt.gca()
@@ -215,15 +224,15 @@ def plotSensitivity(si,sg,BetaCrossSectionTrend):
     CrossSectionLimit =  betaToCross( BetaLimit, *BetaCrossSectionTrend)
 
     
-    ax.errorbar( [plotCrossSections[0],CrossSectionLimit], \
-                 [BetaLimit,BetaLimit], ls='-', \
-                 color='orange')
-    ax.text( 0.006, BetaLimit, \
-                '85 Clusters + single band', color='orange')
+    #ax.errorbar( [plotCrossSections[0],CrossSectionLimit], \
+    #             [BetaLimit,BetaLimit], ls='-', \
+    #             color='orange')
+    #ax.text( 0.006, BetaLimit, \
+    #            '85 Clusters + single band', color='orange')
 
-    ax.errorbar( [CrossSectionLimit,CrossSectionLimit],\
-                 [-1,BetaLimit], ls='-', \
-                     color='orange')
+    #ax.errorbar( [CrossSectionLimit,CrossSectionLimit],\
+     #            [-1,BetaLimit], ls='-', \
+     #                color='orange')
     
     
     BetaLimit = SensitivityBetaDualBand[0]/np.sqrt(totalClusters)
@@ -232,8 +241,12 @@ def plotSensitivity(si,sg,BetaCrossSectionTrend):
     ax.errorbar( [plotCrossSections[0],CrossSectionLimit], \
                  [BetaLimit,BetaLimit], ls='-', \
                 color='green')
-    ax.text( 0.006, BetaLimit, \
-        '85 Clusters + dual band', color='green')
+    ax.errorbar( [CrossSectionLimit,CrossSectionLimit], \
+                 [1e-4,BetaLimit], ls='-', \
+                color='green')
+                
+    ax.text( 0.012, BetaLimit*1.1, \
+        '$\sim10^2$ Clusters Euclid', color='green')
 
     print 'Cross section limit is ',CrossSectionLimit
     ax.errorbar( [CrossSectionLimit,CrossSectionLimit],\
@@ -304,3 +317,5 @@ def plotBulletVectors( iClusterSample ):
                             density=True)
      axarr[2].hist(  iClusterSample.beta[index], bins=30, alpha=1-i*0.3,\
                             density=True)
+if __name__ == '__main__':
+    HSTconstraints()

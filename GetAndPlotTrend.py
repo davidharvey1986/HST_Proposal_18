@@ -13,7 +13,7 @@ def plotTrend( x, y, yError, simName, plotLims=None, color=None):
     trendParams, pError = getTrend( x, y, yError )
 
    
-    print y
+
     ax = plt.gca()
     if plotLims is None:
         plotLims = [np.min(x), np.max(x)]
@@ -38,15 +38,16 @@ def plotLinearTrend( x, y, yError, simName, plotLims=None, color=None):
     #then:
 
    
-    trendParams, pError = getTrend( x, y, yError )
+    trendParams, pError = getTrend( x, y, yError,func=fitfuncLin )
 
    
-    print y
+
     ax = plt.gca()
     if plotLims is None:
         plotLims = [np.min(x), np.max(x)]
     xPlot = np.linspace(plotLims[0], plotLims[1], 100)
-    ax.plot( xPlot, fitfunc( xPlot, *trendParams ), '--', color=color)
+    ax.plot( xPlot, fitfuncLin( xPlot, *trendParams ), '--', \
+                 label=simName, color=color)
     
     pLower = [trendParams[0]+pError[0], \
                   trendParams[1]-pError[1]]
@@ -54,14 +55,18 @@ def plotLinearTrend( x, y, yError, simName, plotLims=None, color=None):
                   trendParams[1]+pError[1]]
     
 
-    
+
     ax.fill_between( xPlot, fitfunc( xPlot, *pUpper), \
                          fitfunc( xPlot, *pLower), \
                          alpha=0.3, color=color )
-
+    
     return trendParams
+
 def fitfunc( x, p1, p2):
     return p1*(1.-np.exp(-x/p2))
+
+def fitfuncLin( x, p1, p2):
+    return p1 + p2*x
 
 def trendError( x, p1, p2, ep1, ep2):
     dP1dx = (1.-np.exp(-x/p2))
@@ -70,7 +75,7 @@ def trendError( x, p1, p2, ep1, ep2):
 
 
 
-def getTrend( x, y, yError ):
+def getTrend( x, y, yError, func=fitfunc ):
 
     '''                                                                                                      
     Fit a straight line to the data                                                                          
@@ -80,7 +85,7 @@ def getTrend( x, y, yError ):
     pinit = [1.0, -1.0]
     args = ( x, y, yError )
     pfinal, covar = \
-      optimize.curve_fit(fitfunc, x, y, sigma=yError)
+      optimize.curve_fit(func, x, y, sigma=yError)
 
 #    print("y = %0.4f + %0.4f * x " % tuple(pfinal))
     pError = [ np.sqrt( covar[0][0] ), np.sqrt( covar[1][1] ) ]
